@@ -9,3 +9,7 @@ class Logger:
                 f.write(message + "\n")
         except Exception as e:
             print(f"[Logger] Failed to write to log file: {e}") 
+
+            
+
+#TODO:replace with aws cloudtrail

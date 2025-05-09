@@ -12,25 +12,27 @@ class ReconnaissanceStep(AttackStep):
         self.fake_data_generator = fake_data_generator
 
     def run(self):
-        self.logger.log_suspicious_activity("[Recon] Enumerating IAM roles and S3 buckets...")
+        # This action will be logged in AWS CloudTrail
+        self.logger.log_suspicious_activity("[Recon] Enumerating IAM roles and EC2 instances in me-south-1...")
         iam = boto3.client('iam')
-        s3 = boto3.client('s3')
+        ec2 = boto3.client('ec2')
         try:
             roles = iam.list_roles()
             self.logger.log_suspicious_activity(f"[Recon] Found {len(roles.get('Roles', []))} IAM roles.")
         except Exception as e:
             self.logger.log_suspicious_activity(f"[Recon] IAM enumeration failed: {e}")
         try:
-            buckets = s3.list_buckets()
-            self.logger.log_suspicious_activity(f"[Recon] Found {len(buckets.get('Buckets', []))} S3 buckets.")
+            instances = ec2.describe_instances()
+            self.logger.log_suspicious_activity(f"[Recon] Found EC2 instances: {instances}")
         except Exception as e:
-            self.logger.log_suspicious_activity(f"[Recon] S3 enumeration failed: {e}")
+            self.logger.log_suspicious_activity(f"[Recon] EC2 enumeration failed: {e}")
 
 class PrivilegeEscalationStep(AttackStep):
     def __init__(self, logger):
         self.logger = logger
 
     def run(self):
+        # This action will be logged in AWS CloudTrail
         self.logger.log_suspicious_activity("[PrivEsc] Attempting to create a new IAM role...")
         iam = boto3.client('iam')
         try:
@@ -49,27 +51,30 @@ class LateralMovementStep(AttackStep):
         self.fake_data_generator = fake_data_generator
 
     def run(self):
-        self.logger.log_suspicious_activity("[Lateral] Simulating container deployment and S3 access...")
+        # This action will be logged in AWS CloudTrail
+        self.logger.log_suspicious_activity("[Lateral] Simulating container deployment and EC2 access...")
         # Simulate container deployment (log only)
         self.logger.log_suspicious_activity("[Lateral] Deployed privileged container (simulated).")
-        # Simulate S3 access
-        s3 = boto3.client('s3')
+        # Simulate EC2 access
+        ec2 = boto3.client('ec2')
         try:
-            s3.list_buckets()
-            self.logger.log_suspicious_activity("[Lateral] Accessed S3 buckets (simulated).")
+            ec2.describe_instances()
+            self.logger.log_suspicious_activity("[Lateral] Accessed EC2 instances (simulated).")
         except Exception as e:
-            self.logger.log_suspicious_activity(f"[Lateral] S3 access failed: {e}")
+            self.logger.log_suspicious_activity(f"[Lateral] EC2 access failed: {e}")
 
 class ImpactStep(AttackStep):
-    def __init__(self, logger, fake_data_generator, s3_bucket_name):
+    def __init__(self, logger, fake_data_generator):
         self.logger = logger
         self.fake_data_generator = fake_data_generator
-        self.s3_bucket_name = s3_bucket_name
 
     def run(self):
-        self.logger.log_suspicious_activity("[Impact] Simulating crypto-mining and data exfiltration...")
+        # This action will be logged in AWS CloudTrail
+        self.logger.log_suspicious_activity("[Impact] Simulating crypto-mining on EC2 instance...")
         # Simulate mining (log only)
         self.logger.log_suspicious_activity("[Impact] Started crypto-mining process (simulated).")
+        # No S3 exfiltration, as the attack is focused on resource abuse
+
         # Simulate data exfiltration
         s3 = boto3.client('s3')
         fake_data = self.fake_data_generator.generate_exfil_data()
