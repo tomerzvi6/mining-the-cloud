@@ -1,11 +1,10 @@
-from attack_chain import ResourceManager, AttackChain, FakeDataGenerator, Logger
+from attack_chain import ResourceManager, AttackChain, FakeDataGenerator
 import pulumi
 
 def main():
     resource_manager = ResourceManager()
     fake_data_generator = FakeDataGenerator()
-    logger = Logger()
-    attack_chain = AttackChain(resource_manager, logger, fake_data_generator)
+    attack_chain = AttackChain(resource_manager, fake_data_generator)
     attack_chain.run()
 
     # Export Pulumi outputs

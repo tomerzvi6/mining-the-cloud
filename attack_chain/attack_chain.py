@@ -2,25 +2,24 @@ from .resource_manager import ResourceManager
 from .steps import ReconnaissanceStep, PrivilegeEscalationStep, LateralMovementStep, ImpactStep
 
 class AttackChain:
-    def __init__(self, resource_manager: ResourceManager, logger, fake_data_generator):
+    def __init__(self, resource_manager: ResourceManager, fake_data_generator):
         self.resource_manager = resource_manager
-        self.logger = logger
         self.fake_data_generator = fake_data_generator
 
     def reconnaissance(self):
-        step = ReconnaissanceStep(self.logger, self.fake_data_generator)
+        step = ReconnaissanceStep(self.fake_data_generator)
         step.run()
 
     def privilege_escalation(self):
-        step = PrivilegeEscalationStep(self.logger)
+        step = PrivilegeEscalationStep()
         step.run()
 
     def lateral_movement(self):
-        step = LateralMovementStep(self.logger, self.fake_data_generator)
+        step = LateralMovementStep(self.fake_data_generator)
         step.run()
 
     def impact(self):
-        step = ImpactStep(self.logger, self.fake_data_generator)
+        step = ImpactStep(self.fake_data_generator)
         step.run()
 
     def run(self):

@@ -1,109 +1,125 @@
 # Mining the Cloud (Israel / me-south-1 Edition)
 
 ## Overview
-This project demonstrates a sophisticated, object-oriented attack chain that would be detected by Cortex XDR, Cortex Cloud, and XSIAM. It simulates a malicious actor (NullFrog) who:
+This project demonstrates a sophisticated, object-oriented attack chain that would be detected by Cortex XDR, Cortex Cloud, and XSIAM. It simulates a malicious actor ("NullFrog") executing a multi-stage cloud attack on AWS, focusing on common misconfigurations and modern attack techniques.
 
-### Attack Story
-- **The Organization:** Acme Corp, a company expanding into the me-south-1 AWS region for a new project. Security controls (like CloudTrail, MFA, and IAM policies) are strong in main regions, but me-south-1 was left out of automation and monitoring.
-- **The LLM Leak:** The DevOps team uses an internal LLM (Large Language Model, like a private ChatGPT) to help with coding and troubleshooting. One day, a DevOps engineer accidentally pastes their AWS access and secret key into the LLM during a support chat. The LLM retains chat history.
-- **Attacker's Entry:** An attacker gains access to the LLM's web interface by stealing a session cookie from a team member (e.g., via phishing). Using prompt injection, the attacker extracts the stored AWS keys from the LLM's memory.
-- **Credentials:** The attacker now has long-term IAM user credentials (no MFA) for a DevOps user in the 'DevOps' group, which has broad permissions in me-south-1.
+The entire simulation is engineered to tell a realistic attacker story, leaving a clear trail of forensic artifacts in AWS CloudTrail for security tools to analyze.
+
+## Attack Story
+- **The Organization:** Acme Corp, a company expanding into the me-south-1 (Israel) AWS region for a new project. Security controls (like detailed CloudTrail monitoring, MFA enforcement, and strict IAM policies) are robust in their primary US/EU regions, but the new me-south-1 environment was left out of standard security automation and monitoring during a rushed deployment.
+- **The LLM Leak:** The DevOps team uses an internal, self-hosted LLM (Large Language Model) to assist with coding and troubleshooting. One day, a DevOps engineer accidentally pastes their AWS access key and secret key into the LLM's chat interface while debugging a script. The LLM, by default, retains chat history.
+- **Attacker's Entry:** An attacker, "NullFrog," sends a convincing phishing email to a DevOps team member, inviting them to "review urgent LLM system updates" via a link to a lookalike website mimicking the internal LLM interface. Believing the request is legitimate, the user enters their credentials to check a supposed new troubleshooting feature, inadvertently handing their session to the attacker. Using prompt injection techniques, NullFrog then queries the real LLM to extract the stored AWS keys from its chat history.
+- **The Compromise:** The attacker now possesses long-term IAM user credentials for a member of the "DevOps" group. Crucially, these credentials are not protected by MFA. The associated IAM role has overly broad permissions in the under-monitored me-south-1 region.
 - **Attack Execution:**
-  1. **Initial Access:** Attacker uses the stolen keys to access AWS in me-south-1.
-  2. **Reconnaissance:** Enumerates IAM roles and EC2 instances.
-  3. **Privilege Escalation:** Attempts to create a new IAM role with admin privileges.
-  4. **Lateral Movement:** Launches a privileged EC2 instance (crypto-miner) using the new role.
-  5. **Impact:** Abuses cloud resources for mining. No S3 exfiltration, as the attack is focused on resource abuse and privilege escalation.
+  - **Initial Access:** NullFrog uses the stolen keys to access the AWS account in the me-south-1 region, hoping to remain undetected.
+  - **Reconnaissance:** They enumerate IAM roles and EC2 instances to map the environment.
+  - **Privilege Escalation:** They create a new IAM role with elevated privileges, exploiting the permissive policies of the compromised DevOps user.
+  - **Lateral Movement & Impact:** NullFrog's ultimate goal is resource abuse. They use their newly acquired privileges to launch a spot EC2 instance configured for crypto-mining. This simulation focuses on privilege escalation and resource abuse, not data exfiltration.
 
-### Why this is realistic
-- LLMs are increasingly used in orgs, and prompt injection/data leakage is a real risk.
-- Many orgs have inconsistent security across regions.
-- Over-permissioned DevOps users and lack of MFA are common.
-- The attack is fully logged in AWS CloudTrail, making it detectable by modern security tools.
+## Why this is realistic
+- **LLM Risk:** Data leakage through internal or public LLMs via prompt injection is an emerging and significant threat vector.
+- **Regional Security Gaps:** Organizations often have inconsistent security postures across different cloud regions, especially in newer or less critical environments.
+- **Common Misconfigurations:** Over-permissioned IAM users and a lack of MFA remain two of the most common and exploitable security weaknesses in cloud environments.
+- **Detectable by Design:** All malicious actions are performed via standard AWS API calls, which are automatically logged in AWS CloudTrail, making them visible to modern security platforms.
 
 ## Technology Stack
-- **Pulumi**: Infrastructure as code for AWS resource creation
-- **boto3**: AWS API interactions for attack simulation
-- **faker**: Generates realistic fake data for logs
-- **Python (OOP)**: Clean, modular, and extensible codebase
+- **Pulumi:** Infrastructure as Code (IaC) for provisioning AWS resources.
+- **boto3:** The AWS SDK for Python, used to programmatically execute the attack steps.
+- **faker:** A Python library to generate realistic fake data for log entries.
+- **Python (OOP):** The project is built with a clean, modular, and object-oriented design for maintainability.
+- **AWS CloudTrail:** The native logging service that captures all API calls, serving as the primary source for detection.
 
-## Security Product Integration
-This attack scenario is designed to demonstrate the capabilities of Cortex products and XSIAM:
-- **Cortex XDR**: Detects endpoint anomalies, suspicious process execution, behavioral analysis, and file system changes
-- **Cortex Cloud**: Identifies cloud workload threats, container security issues, and suspicious IAM activities
-- **XSIAM**: Correlates security events, provides automated response, and offers security intelligence
+## Project Structure & Technical Walkthrough
+The project is built with a clean, modular, object-oriented design for maintainability and reusability.
 
-## Attack Chain Details
-1. **Initial Access & Reconnaissance**
-   - Uses compromised AWS credentials (leaked via LLM)
-   - Enumerates IAM roles and EC2 instances
-   - Creates suspicious security groups
-   - Performs API reconnaissance
+- **main.py:** The primary entry point. It orchestrates the entire simulation by initializing and running the AttackChain.
+- **attack_chain/resource_manager.py:** Manages all AWS resource creation (security groups, IAM roles, EC2 spot instances) using Pulumi, separating infrastructure logic from the attack simulation.
+- **attack_chain/steps.py:** Contains the individual attack phases, each implemented as a distinct class inheriting from an AttackStep abstract base class.
+- **attack_chain/attack_chain.py:** The central orchestrator. This class connects all the attack steps and executes them sequentially to tell the attack story.
+- **attack_chain/fake_data.py:** Employs the faker library to generate realistic fake log entries.
+- **attack_chain/logger.py:** Handles the logging of suspicious activities to the console for demonstration purposes.
 
-2. **Privilege Escalation**
-   - Attempts to create new IAM roles
-   - Deploys privileged containers
-   - Modifies security group rules
-   - Enumerates existing roles and permissions
+## Attack Flow: Step-by-Step
 
-3. **Lateral Movement**
-   - Deploys containerized mining operations
-   - Accesses multiple AWS services
-   - Makes suspicious API calls
+1. **Setup (`main.py`):** The `main()` function instantiates `ResourceManager` and `FakeDataGenerator`, passes them to the `AttackChain`, and finally calls `attack_chain.run()`.
 
-4. **Impact**
-   - Simulates crypto-mining activity
-   - Generates suspicious log entries (all actions are logged in CloudTrail)
-   - Creates network traffic patterns
-   - Modifies system files and permissions
-   - Executes automated attack scripts
+2. **Resource Provisioning:** `AttackChain.run()` first calls `ResourceManager` methods to create the necessary S3 bucket (for logging) and an initial IAM role, setting the stage for the attack.
 
-## Detection Points
-- **Cortex XDR Detection**:
-  - Suspicious process execution (stress, curl)
-  - File system modifications (/etc/cron.d/backdoor)
-  - Network activity patterns
-  - Privileged container execution
-  - Log file modifications
+3. **Reconnaissance (`ReconnaissanceStep`):**
+   - **Action:** The attacker uses `boto3.client('iam').list_roles()` and `boto3.client('ec2').describe_instances()` to enumerate resources and understand the environment.
+   - **Detection:** These initial API calls are logged in AWS CloudTrail, providing immediate visibility into suspicious reconnaissance activities from a new user or location.
 
-- **Cortex Cloud Detection**:
-  - Cloud workload anomalies
-  - Container security violations
-  - IAM privilege escalation attempts
-  - AWS API call anomalies
+4. **Privilege Escalation (`PrivilegeEscalationStep`):**
+   - **Action:** The attacker uses `boto3.client('iam').create_role()` to attempt creating a new, highly privileged IAM role.
+   - **Detection:** This action is a critical indicator of privilege escalation and is fully logged in CloudTrail. Security tools can flag the creation of a new role with excessive permissions as a high-severity alert.
 
-- **XSIAM Detection**:
-  - Security event correlation
-  - Automated response triggers
-  - API call patterns
-  - IAM activity anomalies
-  - Container behavior analysis
-  - File system change monitoring
+5. **Lateral Movement (`LateralMovementStep`):**
+   - **Action:** The attacker uses `boto3.client('ec2').describe_instances()` again to confirm their view of the environment and identify potential targets for resource deployment.
+   - **Detection:** Continued enumeration from the new role can be correlated with the previous privilege escalation event, mapping out a clear lateral movement pattern in CloudTrail.
+
+6. **Impact (`ImpactStep`):**
+   - **Action:** The attacker launches a crypto-mining operation. In the simulation, this is achieved by calling the `ResourceManager` to provision a new EC2 spot instance (`create_spot_instance`). This instance is configured with a user-data script that would typically run crypto-mining software (e.g., stress, xmrig).
+   - **Detection:** The launching of an EC2 instance by a newly created role is highly suspicious. Furthermore, any activity on the instance (like running mining tools) would be caught by an endpoint agent like Cortex XDR. The resource consumption and API calls are logged in CloudTrail.
+
+## Summary Table: Classes and Methods
+
+| Step                  | Class                  | Method(s) Used         | AWS Service/API Called                |
+|-----------------------|------------------------|------------------------|---------------------------------------|
+| Setup                 | main.py                | main()                 | -                                     |
+| Resource Provisioning | ResourceManager        | create_* methods       | Pulumi AWS resources                  |
+| Reconnaissance        | ReconnaissanceStep     | run()                  | iam.list_roles, ec2.describe_instances|
+| Privilege Escalation  | PrivilegeEscalationStep| run()                  | iam.create_role                       |
+| Lateral Movement      | LateralMovementStep    | run()                  | ec2.describe_instances                |
+| Impact                | ImpactStep             | run() (via ResourceManager) | ec2.create_spot_instance         |
+
+## Detection and Security Integration
+This simulation is designed to be detected by the Palo Alto Networks Cortex suite and XSIAM by analyzing the trail of evidence left in AWS CloudTrail and on the affected resources.
+
+### How to Detect This Attack
+
+**Cortex XDR Detection:**
+- Suspicious Process Execution: Detects anomalous processes on the EC2 instance, such as stress or actual crypto-mining binaries (xmrig).
+- File System Modifications: Alerts on the creation of suspicious cron jobs or backdoor scripts (e.g., in /etc/cron.d/backdoor).
+- Network Activity: Flags unusual outbound network patterns consistent with mining pools.
+- Privileged Container Execution: Identifies if the miner was deployed within a privileged container.
+
+**Cortex Cloud Detection:**
+- IAM Privilege Escalation: Immediately flags the CreateRole event as a potential threat.
+- API Call Anomalies: Detects the unusual sequence of API calls (ListRoles -> CreateRole -> RunInstances) originating from a single user.
+- CloudTrail Log Analysis: Continuously analyzes CloudTrail to identify deviations from normal behavior, such as API calls made from an unusual region.
+
+**XSIAM Detection:**
+- Security Event Correlation: Stitches together the disparate alerts from CloudTrail and Cortex XDR into a single, coherent attack story, linking the initial IAM reconnaissance to the eventual EC2 deployment.
+- Automated Response: Can trigger automated playbooks to isolate the EC2 instance, disable the newly created IAM role, and suspend the compromised user credentials.
+- Behavioral Analysis: Identifies that the pattern of API calls and resource creation is anomalous compared to the established baseline for the DevOps user group.
 
 ## Quickstart
-1. **Clone the Repo & Enter Folder**  
-   ```bash
-   git clone https://github.com/tomerzvi6/mining-the-cloud.git
-   cd mining-the-cloud/
-   ```
 
-2. **Configure AWS Credentials**
-   ```bash
-   export AWS_ACCESS_KEY_ID="your_access_key"
-   export AWS_SECRET_ACCESS_KEY="your_secret_key"
-   ```
+### Clone the Repo & Enter Folder
+```bash
+git clone https://github.com/tomerzvi6/mining-the-cloud.git
+cd mining-the-cloud/
+```
 
-3. **Deploy the Attack Scenario**
-   ```bash
-   pulumi up
-   ```
+### Configure AWS Credentials
+```bash
+export AWS_ACCESS_KEY_ID="your_access_key"
+export AWS_SECRET_ACCESS_KEY="your_secret_key"
+```
 
-4. **Run the Attack Chain (OOP Entrypoint)**
-   ```bash
-   python main.py
-   ```
+### Deploy the Attack Scenario
+This step uses Pulumi to provision the initial AWS resources needed for the attack.
+```bash
+pulumi up
+```
+
+### Run the Attack Chain (OOP Entrypoint)
+This step executes the Python script that simulates the attacker's actions.
+```bash
+python main.py
+```
 
 ## Note
-This is a demonstration project for educational purposes only. Always ensure you have proper authorization before running security tests in any environment.
+This is a demonstration project for educational and security research purposes only. Always ensure you have explicit and proper authorization before running security tests in any environment.
 
 
