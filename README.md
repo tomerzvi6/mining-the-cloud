@@ -1,4 +1,4 @@
-# Mining the Cloud (Israel / me-south-1 Edition)
+# Mining the Cloud (Israel / us-east-1 Edition)
 
 ## Overview
 This project demonstrates a sophisticated, object-oriented attack chain that would be detected by Cortex XDR, Cortex Cloud, and XSIAM. It simulates a malicious actor ("NullFrog") executing a multi-stage cloud attack on AWS, focusing on common misconfigurations and modern attack techniques.
@@ -6,12 +6,12 @@ This project demonstrates a sophisticated, object-oriented attack chain that wou
 The entire simulation is engineered to tell a realistic attacker story, leaving a clear trail of forensic artifacts in AWS CloudTrail for security tools to analyze.
 
 ## Attack Story
-- **The Organization:** Acme Corp, a company expanding into the me-south-1 (Israel) AWS region for a new project. Security controls (like detailed CloudTrail monitoring, MFA enforcement, and strict IAM policies) are robust in their primary US/EU regions, but the new me-south-1 environment was left out of standard security automation and monitoring during a rushed deployment.
+- **The Organization:** Acme Corp, a company expanding into the us-east-1 (Israel) AWS region for a new project. Security controls (like detailed CloudTrail monitoring, MFA enforcement, and strict IAM policies) are robust in their primary US/EU regions, but the new us-east-1 environment was left out of standard security automation and monitoring during a rushed deployment.
 - **The LLM Leak:** The DevOps team uses an internal, self-hosted LLM (Large Language Model) to assist with coding and troubleshooting. One day, a DevOps engineer accidentally pastes their AWS access key and secret key into the LLM's chat interface while debugging a script. The LLM, by default, retains chat history.
 - **Attacker's Entry:** An attacker, "NullFrog," sends a convincing phishing email to a DevOps team member, inviting them to "review urgent LLM system updates" via a link to a lookalike website mimicking the internal LLM interface. Believing the request is legitimate, the user enters their credentials to check a supposed new troubleshooting feature, inadvertently handing their session to the attacker. Using prompt injection techniques, NullFrog then queries the real LLM to extract the stored AWS keys from its chat history.
-- **The Compromise:** The attacker now possesses long-term IAM user credentials for a member of the "DevOps" group. Crucially, these credentials are not protected by MFA. The associated IAM role has overly broad permissions in the under-monitored me-south-1 region.
+- **The Compromise:** The attacker now possesses long-term IAM user credentials for a member of the "DevOps" group. Crucially, these credentials are not protected by MFA. The associated IAM role has overly broad permissions in the under-monitored us-east-1 region.
 - **Attack Execution:**
-  - **Initial Access:** NullFrog uses the stolen keys to access the AWS account in the me-south-1 region, hoping to remain undetected.
+  - **Initial Access:** NullFrog uses the stolen keys to access the AWS account in the us-east-1 region, hoping to remain undetected.
   - **Reconnaissance:** They enumerate IAM roles and EC2 instances to map the environment.
   - **Privilege Escalation:** They create a new IAM role with elevated privileges, exploiting the permissive policies of the compromised DevOps user.
   - **Lateral Movement & Impact:** NullFrog's ultimate goal is resource abuse. They use their newly acquired privileges to launch a spot EC2 instance configured for crypto-mining. This simulation focuses on privilege escalation and resource abuse, not data exfiltration.

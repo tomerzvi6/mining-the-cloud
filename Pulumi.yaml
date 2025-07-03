@@ -1,3 +1,3 @@
 name: mining-the-cloud
 runtime: python
-description: A Pulumi-based AWS “crypto-mining” attack simulation, optimized for minimal cost in me-south-1.
+description: A Pulumi-based AWS “crypto-mining” attack simulation, optimized for minimal cost in us-east-1.
