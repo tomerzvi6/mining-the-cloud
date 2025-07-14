@@ -6,9 +6,10 @@ This project demonstrates a sophisticated, object-oriented attack chain that wou
 The entire simulation is engineered to tell a realistic attacker story, leaving a clear trail of forensic artifacts in AWS CloudTrail for security tools to analyze.
 
 ## Attack Story
-- **The Organization:** Acme Corp, a company expanding into the ap-northeast-3 (Israel) AWS region for a new project. Security controls (like detailed CloudTrail monitoring, MFA enforcement, and strict IAM policies) are robust in their primary US/EU regions, but the new ap-northeast-3 environment was left out of standard security automation and monitoring during a rushed deployment.
-- **The LLM Leak:** The DevOps team uses an internal, self-hosted LLM (Large Language Model) to assist with coding and troubleshooting. One day, a DevOps engineer accidentally pastes their AWS access key and secret key into the LLM's chat interface while debugging a script. The LLM, by default, retains chat history.
-- **Attacker's Entry:** An attacker, "NullFrog," sends a convincing phishing email to a DevOps team member, inviting them to "review urgent LLM system updates" via a link to a lookalike website mimicking the internal LLM interface. Believing the request is legitimate, the user enters their credentials to check a supposed new troubleshooting feature, inadvertently handing their session to the attacker. Using prompt injection techniques, NullFrog then queries the real LLM to extract the stored AWS keys from its chat history.
+- **The Organization:** A company expanding into the ap-northeast-3 (Israel) AWS region for a new project. Security controls (like detailed CloudTrail monitoring, MFA enforcement, and strict IAM policies) are robust in their primary US/EU regions, but the new ap-northeast-3 environment was left out of standard security automation and monitoring during a rushed deployment.
+- **The LLM Leak:** The team uses a general-purpose, home-made LLM assistant (similar to ChatGPT or Gemini, but not a commercial product) to help with coding, troubleshooting, and general questions. One day, a DevOps engineer accidentally pastes their AWS access key and secret key into the LLM's chat interface while debugging a script. The LLM, by default, retains chat history.
+- **Attacker's Entry:** An attacker, "NullFrog," creates a fake website using Bolt AI that mimics the real LLM login page. The attacker sends a phishing email to a team member, luring them to the fake site. The user enters their credentials, which the attacker then uses to log in to the real LLM website.
+- **Prompt Injection & Data Extraction:** Once inside, the attacker uses prompt injection techniques to query the LLM and extract the stored AWS keys from its chat history.
 - **The Compromise:** The attacker now possesses long-term IAM user credentials for a member of the "DevOps" group. Crucially, these credentials are not protected by MFA. The associated IAM role has overly broad permissions in the under-monitored ap-northeast-3 region.
 - **Attack Execution:**
   - **Initial Access:** NullFrog uses the stolen keys to access the AWS account in the ap-northeast-3 region, hoping to remain undetected.
@@ -61,17 +62,6 @@ The project is built with a clean, modular, object-oriented design for maintaina
    - **Action:** The attacker launches a crypto-mining operation. In the simulation, this is achieved by calling the `ResourceManager` to provision a new EC2 spot instance (`create_spot_instance`). This instance is configured with a user-data script that would typically run crypto-mining software (e.g., stress, xmrig).
    - **Detection:** The launching of an EC2 instance by a newly created role is highly suspicious. Furthermore, any activity on the instance (like running mining tools) would be caught by an endpoint agent like Cortex XDR. The resource consumption and API calls are logged in CloudTrail.
 
-## Summary Table: Classes and Methods
-
-| Step                  | Class                  | Method(s) Used         | AWS Service/API Called                |
-|-----------------------|------------------------|------------------------|---------------------------------------|
-| Setup                 | main.py                | main()                 | -                                     |
-| Resource Provisioning | ResourceManager        | create_* methods       | Pulumi AWS resources                  |
-| Reconnaissance        | ReconnaissanceStep     | run()                  | iam.list_roles, ec2.describe_instances|
-| Privilege Escalation  | PrivilegeEscalationStep| run()                  | iam.create_role                       |
-| Lateral Movement      | LateralMovementStep    | run()                  | ec2.describe_instances                |
-| Impact                | ImpactStep             | run() (via ResourceManager) | ec2.create_spot_instance         |
-
 ## Detection and Security Integration
 This simulation is designed to be detected by the Palo Alto Networks Cortex suite and XSIAM by analyzing the trail of evidence left in AWS CloudTrail and on the affected resources.
 
@@ -121,7 +111,13 @@ python main.py
 
 ## LLM Chatbot Simulation
 
-This project includes an internal LLM-based chatbot that simulates how sensitive information, such as AWS credentials, can be leaked via prompt injection attacks. The chatbot is designed to mimic a real-world scenario where a DevOps engineer accidentally pastes credentials into a chat interface, and an attacker can later extract them using clever prompts. This tool demonstrates the risks of LLMs retaining sensitive context and the importance of securing internal AI assistants.
+This project includes an internal LLM-based chatbot that simulates how sensitive information, such as AWS credentials, can be leaked via prompt injection attacks. The chatbot is a general, home-made internal tool (not a commercial product) that mimics a real-world scenario where a DevOps engineer accidentally pastes credentials into a chat interface, and an attacker can later extract them using clever prompts. This tool demonstrates the risks of LLMs retaining sensitive context and the importance of securing internal AI assistants.
+
+### Attack Simulation Flow
+- The attacker creates a fake website using Bolt AI that mimics the internal LLM login page.
+- The attacker sends a phishing email to a user, luring them to the fake site.
+- The user enters their credentials into the fake site.
+- The attacker uses the stolen credentials to log in to the real internal LLM website and perform prompt injection attacks to extract sensitive information.
 
 ### Running the Chatbot
 
