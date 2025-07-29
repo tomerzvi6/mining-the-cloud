@@ -109,6 +109,18 @@ This step executes the Python script that simulates the attacker's actions.
 python main.py
 ```
 
+### Monitor Attack Impact (Optional)
+Run the real-time monitoring script to track attack progress:
+```bash
+python monitor_attack.py
+```
+
+### Verify Attack Success
+After running the attack, verify its impact:
+```bash
+python verify_attack.py
+```
+
 ## LLM Chatbot Simulation
 
 This project includes an internal LLM-based chatbot that simulates how sensitive information, such as AWS credentials, can be leaked via prompt injection attacks. The chatbot is a general, home-made internal tool (not a commercial product) that mimics a real-world scenario where a DevOps engineer accidentally pastes credentials into a chat interface, and an attacker can later extract them using clever prompts. This tool demonstrates the risks of LLMs retaining sensitive context and the importance of securing internal AI assistants.
@@ -128,6 +140,70 @@ python -m streamlit run .\Acme_chatbot.py
 ```
 
 This will open a web interface where you can interact with the simulated internal chatbot and experiment with prompt injection scenarios.
+
+## Assessing Attack Impact
+
+### How to Know if the Attack Worked
+
+The attack simulation is designed to leave clear forensic artifacts that can be detected through multiple methods:
+
+#### 1. **Built-in Impact Assessment**
+The attack chain now includes automatic impact assessment that runs after the simulation completes. It checks for:
+- ✅ IAM roles with "NullFrog" or "escalation" in the name
+- ✅ EC2 instances tagged with attack indicators
+- ✅ S3 buckets created for data exfiltration
+- ✅ Security groups configured for the attack
+
+#### 2. **Real-time Monitoring**
+Use the monitoring script to track attack progress in real-time:
+```bash
+python monitor_attack.py
+```
+This will continuously check for new attack artifacts and alert you when they're detected.
+
+#### 3. **Post-Attack Verification**
+Run the verification script to check for all attack artifacts:
+```bash
+python verify_attack.py
+```
+This provides a comprehensive report of all detected attack indicators.
+
+#### 4. **AWS Console Verification**
+Manually check these resources in your AWS console:
+- **IAM Roles**: Look for roles with "NullFrog" or "escalation" in the name
+- **EC2 Instances**: Check for instances tagged with "NullFrog" or "CryptoMiningDemo"
+- **S3 Buckets**: Look for buckets with "NullFrog" or "exfil" tags
+- **Security Groups**: Check for security groups named "nullfrog-sg"
+
+#### 5. **CloudTrail Analysis**
+All attack actions are logged in AWS CloudTrail. Look for these events:
+- `ListRoles` - Initial reconnaissance
+- `CreateRole` - Privilege escalation
+- `DescribeInstances` - Lateral movement
+- `RunInstances` - Resource deployment
+- `PutObject` - Data exfiltration
+
+#### 6. **Security Tool Detection**
+The attack is designed to be detected by:
+- **Cortex XDR**: Suspicious process execution and file modifications
+- **Cortex Cloud**: IAM privilege escalation and API call anomalies
+- **XSIAM**: Security event correlation and behavioral analysis
+
+### Success Indicators
+
+The attack is considered successful if you see:
+1. **IAM Role Creation**: A new role named "NullFrogEscalation" or similar
+2. **Resource Deployment**: EC2 instances or S3 buckets with attack-related tags
+3. **CloudTrail Events**: Suspicious API call patterns in the logs
+4. **Security Alerts**: Detection by your security monitoring tools
+
+### Failure Indicators
+
+The attack may have failed if:
+- No new IAM roles are created
+- No EC2 instances are launched
+- No suspicious CloudTrail events are logged
+- All API calls return permission errors
 
 ## Note
 This is a demonstration project for educational and security research purposes only. Always ensure you have explicit and proper authorization before running security tests in any environment.
