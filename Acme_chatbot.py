@@ -5,8 +5,10 @@ import boto3
 import os
 import streamlit as st
 
-# Set the AWS profile, ensure this profile has permissions for Bedrock in eu-central-1
-os.environ["AWS_PROFILE"] = "Tomer"
+# Set the AWS profile from environment variable or use default
+aws_profile = os.environ.get("AWS_PROFILE", "default")
+if aws_profile != "default":
+    os.environ["AWS_PROFILE"] = aws_profile
 
 # Bedrock client configuration
 bedrock_client = boto3.client(
@@ -42,7 +44,7 @@ Let me know if you hit any issues with permissions.
         # Optionally, you can add a follow-up message to make it even more natural:
         chat_history += """
 [10:16 AM] Jamie (Backend):  
-Thanks Alex! I’ll try redeploying after lunch.
+Thanks Alex! I'll try redeploying after lunch.
 """
         contextual_input = chat_history + freeform_text
     else:
